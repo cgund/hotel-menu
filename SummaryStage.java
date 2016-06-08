@@ -1,3 +1,5 @@
+package menu;
+
 
 import java.text.NumberFormat;
 import java.util.LinkedList;
@@ -181,7 +183,7 @@ class SummaryStage
         for (OrderPane.OrderGroup group: orderGroups)
         {
             gpOrders.addRow(row, new Label(group.getItem()), new Label(String.valueOf(group.getQuantity())), 
-                        new Label(String.valueOf(group.getPrice())));
+                        new Label(String.valueOf(group.getTotalPrice())));
             row++;
         }
     }

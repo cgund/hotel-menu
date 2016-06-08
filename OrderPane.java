@@ -1,3 +1,5 @@
+package menu;
+
 
 import java.text.NumberFormat;
 import java.time.LocalDate;
@@ -219,18 +221,50 @@ public class OrderPane extends VBox
     }
     
     /*
-    Creates a new OrderGroup. Adds OrderGroup properties to GridPane, adds
+    Increments spinner if OrderGroup already exists and updates total.  Otherwise,
+    creates a new OrderGroup. Adds OrderGroup properties to GridPane, adds
     OrderGroup object to List of OrderGroups
     */
     public void addMenuItem(String menuItem, Double price)
     {
-        OrderGroup group = new OrderGroup(menuItem, 1, price);
-        gpOrders.addRow(row++, group.getLblItem(), group.getSpinner(), 
-                  group.getLblPrice(), group.getBtnRemove());
-        orders.add(group); //Collection to hold all OrderGroup objects
-        updateSubTotal();
+        OrderGroup existingGroup = isItemAdded(menuItem);
+        if (existingGroup != null)
+        {
+            existingGroup.getSpinner().increment();
+            existingGroup.update();
+        }
+        else
+        {    
+            OrderGroup group = new OrderGroup(menuItem, 1, price);
+            gpOrders.addRow(row++, group.getLblItem(), group.getSpinner(), 
+                      group.getLblPrice(), group.getBtnRemove());
+            orders.add(group); //Collection to hold all OrderGroup objects           
+        }
+        updateSubTotal(); 
     }
     
+    /*
+    Returns OrderGroup of which specified menuItem is a member if that OrderGroup
+    exists.  Otherwise returns null.
+    */
+    private OrderGroup isItemAdded(String menuItem)
+    {
+        OrderGroup existing = null;
+        boolean exists = false;
+        int index = 0;
+        while (!exists && index < orders.size())
+        {
+            OrderGroup group = orders.get(index);
+            if (group.getItem().equals(menuItem))
+            {
+                existing = group;
+                exists = true;
+            }
+            index++;
+        }
+        return existing;
+    }
+
     /*
     Updates subtotal displayed to user
     */
@@ -239,7 +273,7 @@ public class OrderPane extends VBox
         double runningTotal = 0;
         for (OrderGroup group: orders)
         {
-            runningTotal += group.getPrice();
+            runningTotal += group.getTotalPrice();
         }
         subTotal = runningTotal;
         NumberFormat nFormatter = NumberFormat.getCurrencyInstance();
@@ -320,18 +354,20 @@ public class OrderPane extends VBox
     {
         private final String item;
         private int quantity;
-        private Double price;
+        private Double unitPrice;
+        private Double totalPrice;
         private final Label lblItem;
-        private Spinner<Integer> spinner;
-        private Label lblPrice;
+        private final Spinner<Integer> spinner;
+        private final Label lblPrice;
         private final Button btnRemove;
 
-        public OrderGroup(String item, Integer quantity, Double itemPrice) 
+        private OrderGroup(String item, Integer quantity, Double unitPrice) 
         {
             super();
             this.item = item;
             this.quantity = quantity;
-            this.price = itemPrice;
+            this.unitPrice = unitPrice;
+            this.totalPrice = unitPrice;
             spinner = new Spinner();
             spinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(0, 10, 1));
             spinner.setPrefWidth(55);
@@ -341,14 +377,11 @@ public class OrderPane extends VBox
             */
             spinner.setOnMouseClicked(e ->
             {
-                this.quantity = spinner.getValue();
-                this.price = itemPrice * (double) this.quantity;
-                lblPrice.setText(this.price.toString());
-                updateSubTotal();
+                update();
             });
 
             lblItem = new Label(item);
-            lblPrice = new Label(itemPrice.toString());
+            lblPrice = new Label(unitPrice.toString());
             btnRemove = new Button("Remove");
             btnRemove.setOnMouseClicked(e -> 
             {
@@ -368,23 +401,34 @@ public class OrderPane extends VBox
         {
             return quantity;
         }
-        public Double getPrice() {
-            return price;
+        public Double getTotalPrice() {
+            return totalPrice;
         }
 
-        public Label getLblItem() {
+        private Label getLblItem() {
             return lblItem;
         }
 
-        public Spinner<Integer> getSpinner() {
+        private Spinner<Integer> getSpinner() {
             return spinner;
         }
+        
+        /*
+        Updates running total of both OrderGroup and entire order
+        */
+        private void update()
+        {
+            this.quantity = spinner.getValue();
+            this.totalPrice = this.unitPrice * (double) this.quantity;
+            lblPrice.setText(this.totalPrice.toString());
+            updateSubTotal();            
+        }
 
-        public Label getLblPrice() {
+        private Label getLblPrice() {
             return lblPrice;
         }
 
-        public Button getBtnRemove() {
+        private Button getBtnRemove() {
             return btnRemove;
         }
         
@@ -392,7 +436,7 @@ public class OrderPane extends VBox
         Removes OrderGroup from List and ObservableList of GridPane.  Calls
         updateSubTotal method
         */
-        public final void remove()
+        private final void remove()
         {
             orders.remove(this);
             gpOrders.getChildren().removeAll(lblItem, spinner, 

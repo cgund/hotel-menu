@@ -1,3 +1,5 @@
+package menu;
+
 
 /*
 Encapsulates an item on a restaurant menu

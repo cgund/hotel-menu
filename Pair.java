@@ -1,3 +1,5 @@
+package menu;
+
 /*
 Class to encapsulate two elements that have a natural pair structure
 */
